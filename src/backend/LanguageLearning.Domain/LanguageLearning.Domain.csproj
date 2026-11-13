@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain 不相依任何其他專案或框架套件。 -->
+  <PropertyGroup>
+    <RootNamespace>LanguageLearning.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

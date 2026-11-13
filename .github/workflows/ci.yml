@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # 只用於 EF Core 設計階段建立 DbContext，不會實際連線。
+  DESIGN_TIME_CONNECTION: Server=localhost;Database=LanguageLearning;TrustServerCertificate=True
+
+jobs:
+  backend:
+    name: Backend（Build、單元測試、整合測試）
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: .NET 資訊
+        run: dotnet --version
+
+      - name: Restore
+        run: dotnet restore LanguageLearning.slnx
+
+      - name: Build（警告視為錯誤）
+        run: dotnet build LanguageLearning.slnx --no-restore -c Release
+
+      - name: 檢查 EF Core Model 與 Migration 一致
+        env:
+          ConnectionStrings__Default: ${{ env.DESIGN_TIME_CONNECTION }}
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes \
+            --project src/backend/LanguageLearning.Infrastructure \
+            --startup-project src/backend/LanguageLearning.Api \
+            --configuration Release --no-build
+
+      - name: 單元測試
+        run: dotnet test --project tests/backend/LanguageLearning.UnitTests/LanguageLearning.UnitTests.csproj -c Release --no-build
+
+      - name: 整合測試（Testcontainers SQL Server）
+        run: dotnet test --project tests/backend/LanguageLearning.IntegrationTests/LanguageLearning.IntegrationTests.csproj -c Release --no-build
+
+      - name: 套件弱點檢查
+        run: dotnet list LanguageLearning.slnx package --vulnerable --include-transitive
+
+  frontend:
+    name: Frontend（Lint、型別檢查、測試、Build）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: 前後端版本一致
+        working-directory: .
+        run: |
+          backend=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)
+          frontend=$(node -p "require('./src/frontend/package.json').version")
+          echo "backend=$backend frontend=$frontend"
+          test "$backend" = "$frontend"
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: 套件弱點檢查（正式相依）
+        run: npm audit --omit=dev --audit-level=high
+
+  e2e:
+    name: E2E（Playwright + axe）
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 產生一次性測試憑證（不寫入 Repository）
+        run: |
+          sa="Ll$(openssl rand -hex 12)!Aa1"
+          admin="Admin$(openssl rand -hex 8)Aa1"
+          echo "::add-mask::$sa"
+          echo "::add-mask::$admin"
+          {
+            echo "MSSQL_SA_PASSWORD=$sa"
+            echo "E2E_ADMIN_PASSWORD=$admin"
+            echo "E2E_CONNECTION_STRING=Server=localhost,1433;Database=LanguageLearningE2E;User Id=sa;Password=$sa;TrustServerCertificate=True;Encrypt=True"
+          } >> "$GITHUB_ENV"
+
+      - name: 啟動 SQL Server 與 Mailpit
+        run: docker compose up -d --wait
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            src/frontend/package-lock.json
+            tests/e2e/package-lock.json
+
+      - name: 安裝前端相依套件
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: 安裝 E2E 相依套件與瀏覽器
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: 執行 E2E
+        working-directory: tests/e2e
+        run: npx playwright test
+
+      - name: 上傳 Playwright 報告
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report
+          retention-days: 14
+
+      - name: 服務日誌（失敗時）
+        if: failure()
+        run: docker compose logs --tail=200

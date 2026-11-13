@@ -1,0 +1,63 @@
+name: Bootstrap generated files
+
+# 產生需要 SDK / 套件來源才能建立的檔案，並提交回 Repository：
+#   - src/frontend/package-lock.json、tests/e2e/package-lock.json
+#   - EF Core 初始 Migration（僅在尚無 Migration 時建立）
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: 產生 npm lockfile
+        run: |
+          (cd src/frontend && npm install --no-audit --no-fund)
+          (cd tests/e2e && npm install --no-audit --no-fund)
+
+      - name: 建置後端
+        run: dotnet build LanguageLearning.slnx -c Debug
+
+      - name: 產生初始 Migration（若尚未存在）
+        env:
+          ConnectionStrings__Default: Server=localhost;Database=LanguageLearning;TrustServerCertificate=True
+        run: |
+          dotnet tool restore
+          migrations=src/backend/LanguageLearning.Infrastructure/Persistence/Migrations
+          if ! ls "$migrations"/*.cs >/dev/null 2>&1; then
+            dotnet ef migrations add InitialCreate \
+              --project src/backend/LanguageLearning.Infrastructure \
+              --startup-project src/backend/LanguageLearning.Api \
+              --output-dir Persistence/Migrations \
+              --no-build
+          fi
+
+      - name: 提交產生的檔案
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/frontend/package-lock.json tests/e2e/package-lock.json src/backend/LanguageLearning.Infrastructure/Persistence/Migrations
+          if git diff --cached --quiet; then
+            echo "沒有需要提交的變更。"
+          else
+            git commit -m "chore: generate npm lockfiles and initial EF Core migration"
+            git push
+          fi
