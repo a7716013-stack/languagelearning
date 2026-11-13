@@ -9,7 +9,12 @@ export function Toaster(props: ToasterProps) {
       position="top-center"
       richColors
       closeButton
-      toastOptions={{ duration: 4000 }}
+      toastOptions={{
+        duration: 4000,
+        style: {
+          '--success-text': resolvedTheme === 'dark' ? '#59f3a6' : '#006b24',
+        } as React.CSSProperties,
+      }}
       {...props}
     />
   )

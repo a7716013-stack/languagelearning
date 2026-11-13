@@ -65,7 +65,7 @@ test.describe('帳號流程', () => {
     await page.getByLabel('新密碼', { exact: true }).fill(newPassword)
     await page.getByLabel('確認新密碼').fill(newPassword)
     await page.getByRole('button', { name: '重設密碼' }).click()
-    await expect(page.getByText('密碼已重設')).toBeVisible()
+    await expect(page.getByText('密碼已重設', { exact: true })).toBeVisible()
 
     await login(page, email, PASSWORD)
     await expect(page.getByRole('alert')).toContainText('Email 或密碼不正確')

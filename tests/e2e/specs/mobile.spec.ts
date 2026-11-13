@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { createReadyStudent } from '../support/helpers'
 
 test('手機版使用底部導航，隱藏桌面側欄', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 851 })
   await createReadyStudent(page)
 
   const bottomNav = page.getByRole('navigation', { name: '主要導覽（行動版）' })
