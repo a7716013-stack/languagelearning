@@ -34,6 +34,9 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
             ["Seed:Admin:Email"] = AdminEmail,
             ["Seed:Admin:Password"] = AdminPassword,
             ["Seed:Admin:DisplayName"] = "測試管理員",
+            ["Email:Provider"] = "Smtp",
+            ["Email:Outbox:PollIntervalSeconds"] = "1",
+            ["Email:Outbox:RetryBaseDelaySeconds"] = "1",
         };
 
         foreach (var (key, value) in overrides)

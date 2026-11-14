@@ -1,13 +1,37 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * E2E 測試需要：SQL Server（docker compose）、Mailpit（docker compose）。
+ * E2E 測試需要：SQL Server（docker compose 或 LocalDB）。
  * 預設由 Playwright 啟動 API（http://localhost:5080）與前端 preview（http://localhost:4173，含 Service Worker 與 CSP）。
  * 若已自行啟動服務，設定 E2E_SKIP_WEBSERVER=1。
+ *
+ * 系統信件：
+ * - 本機預設（E2E_MAIL_MODE 未設定）：API 以 Email:Provider=File 把信件存成 HTML 檔，測試從 E2E_MAIL_DIR 讀取，不需要 Mailpit。
+ *   預設資料夾與 API 開發環境相同（src/backend/LanguageLearning.Api/App_Data/mail），自行啟動的 API 也適用。
+ * - CI（E2E_MAIL_MODE=mailpit）：API 以 SMTP 寄到 Mailpit，測試從 Mailpit API 讀取。
  */
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:4173'
 const connectionString = process.env.E2E_CONNECTION_STRING
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@languagelearning.test'
+const mailMode = process.env.E2E_MAIL_MODE === 'mailpit' ? 'mailpit' : 'file'
+const mailDir =
+  process.env.E2E_MAIL_DIR ??
+  fileURLToPath(new URL('../../src/backend/LanguageLearning.Api/App_Data/mail', import.meta.url))
+
+if (mailMode === 'file') {
+  // 測試程式（support/mail.ts）依此讀取信件檔；設定檔在每個 worker 都會載入，因此 worker 也看得到。
+  process.env.E2E_MAIL_DIR = mailDir
+}
+
+const emailEnv: Record<string, string> =
+  mailMode === 'file'
+    ? { Email__Provider: 'File', Email__File__Directory: mailDir }
+    : {
+        Email__Provider: 'Smtp',
+        Email__Smtp__Host: process.env.E2E_SMTP_HOST ?? 'localhost',
+        Email__Smtp__Port: process.env.E2E_SMTP_PORT ?? '1025',
+      }
 
 export default defineConfig({
   testDir: './specs',
@@ -24,6 +48,8 @@ export default defineConfig({
     timezoneId: 'Asia/Taipei',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // 關閉動畫：避免 axe 在淡入過程中量到半透明的顏色而誤判對比不足。
+    contextOptions: { reducedMotion: 'reduce' },
   },
   projects: [
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
@@ -45,8 +71,8 @@ export default defineConfig({
             App__PublicBaseUrl: baseURL,
             App__UseHttpsRedirection: 'false',
             Database__ApplyMigrationsOnStartup: 'true',
-            Email__Smtp__Host: process.env.E2E_SMTP_HOST ?? 'localhost',
-            Email__Smtp__Port: process.env.E2E_SMTP_PORT ?? '1025',
+            ...emailEnv,
+            Email__Outbox__PollIntervalSeconds: '1',
             RateLimiting__Auth__PermitLimit: '1000',
             Seed__Admin__Email: adminEmail,
             Seed__Admin__Password: process.env.E2E_ADMIN_PASSWORD ?? '',

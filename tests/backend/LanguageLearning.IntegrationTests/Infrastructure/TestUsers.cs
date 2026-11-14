@@ -17,7 +17,7 @@ public static class TestUsers
         var register = await client.PostAsync("/api/auth/register", new { email, password, displayName = "測試學生" });
         await TestClient.EnsureStatusAsync(register, HttpStatusCode.Accepted);
 
-        var query = factory.Emails.LatestLinkQuery(email, "/confirm-email");
+        var query = await factory.Emails.WaitForLinkQueryAsync(email, "/confirm-email");
         var confirm = await client.PostAsync(
             "/api/auth/confirm-email",
             new { userId = query["userId"], token = query["token"] });

@@ -1,7 +1,7 @@
 {
   "name": "languagelearning-web",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "LanguageLearning — AI 英文檢定學習平台（前端）",
   "type": "module",
   "engines": {

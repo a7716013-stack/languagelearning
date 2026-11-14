@@ -129,9 +129,9 @@ Claude Code 需要在可以實際編譯、執行資料庫與瀏覽器測試的�
 - 前端提交 `package-lock.json`；CI 使用 `npm ci`。
 
 ### 3.2 產品版本號
-- 採 Semantic Versioning。Phase 1 交付版本為 **1.0.0**；之後每完成一個 Phase 提升 minor 版本（1.1.0、1.2.0…），修正提升 patch。
-- 後端版本只定義在 `Directory.Build.props`（`<Version>1.0.0</Version>`）。
-- 前端版本只定義在 `src/frontend/package.json`（`"version": "1.0.0"`），透過 Vite `define` 注入介面。
+- 採 Semantic Versioning。Phase 1 交付版本為 **1.0.0**；Phase 2 交付版本為 **2.1.0**（開發者指定，見 `docs/decisions/0005-versioning-phase2.md`）。之後各 Phase 的版本號於該 Phase 開始時由開發者決定；修正提升 patch。
+- 後端版本只定義在 `Directory.Build.props`（例如 `<Version>2.1.0</Version>`）。
+- 前端版本只定義在 `src/frontend/package.json`（例如 `"version": "2.1.0"`），透過 Vite `define` 注入介面。
 - 版本須出現在：OpenAPI 文件 `info.version`、`GET /api/version`、前端「設定」頁與頁尾。
 - CI 加入檢查：前後端版本號必須一致。
 
@@ -634,22 +634,22 @@ Phase 1 必要測試：
 - 前端測試：表單驗證、API client（CSRF Header、401 處理、CSRF 失敗重試）、路由守衛、主題切換。
 - E2E：完整註冊到登出流程（透過 Mailpit API 取得驗證信）、手機尺寸底部導航、主要頁面 axe 檢查。
 
-### Phase 2 — 題庫與測驗引擎（版本 1.1.0）
+### Phase 2 — 題庫與測驗引擎（版本 2.1.0）
 完成題庫、題組、媒體檔、練習、模擬考、自動儲存、交卷、客觀題計分、成績報告、題庫管理後台。
 
 驗收：示範帳號可以完成一次練習與一次模擬考；重整後保留答案；作答期間 API 不洩漏答案；交卷後取得正確報告；重複或並行交卷不會重複計算；逾時自動結束；題目更新不影響歷史成績；計分規則有完整單元測試。
 
-### Phase 3 — 學習系統（版本 1.2.0）
+### Phase 3 — 學習系統（版本另行決定）
 完成錯題本、單字 SRS、程度診斷、學習計畫、學習分析、學習首頁完整指標與完整後台。
 
 驗收：學習數據可持續累積；錯題與單字複習能正確更新；SRS 排程有單元測試；首頁指標與實際資料一致。
 
-### Phase 4 — AI 功能（版本 1.3.0）
+### Phase 4 — AI 功能（版本另行決定）
 加入 AI 解題、個人化學習建議、作文批改與口說練習。
 
 驗收：無 API Key 時核心學習功能仍可運作；AI 服務出錯或逾時不影響一般測驗；AI 內容標註為練習參考；Token 與費用有紀錄；有速率限制與不可信輸入防護。
 
-### Phase 5 — 產品化（版本 2.0.0 或依實際範圍決定）
+### Phase 5 — 產品化（版本另行決定）
 擴充 IELTS / TOEFL、完整 PWA、部署、效能、安全強化與產品化。
 
 ### 每個 Phase 的共同要求

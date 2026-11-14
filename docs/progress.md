@@ -1,5 +1,62 @@
 # 開發進度
 
+## Phase 2 — 題庫與測驗引擎（v2.1.0，開發中）
+
+狀態：**F2-01（穩定性）實作中**。分支 `fix/phase1-stability`（由 `main` `93f2f05` 建立）；已通過本機建置，測試尚未執行。
+討論結論見 [docs/phase2/00-decisions.md](phase2/00-decisions.md)；版號決策見 ADR 0005。
+
+### 工作包
+
+| 工作包 | 內容 | 狀態 |
+|---|---|---|
+| F2-01 | 穩定性：寄信改非同步、開發環境信件檔、E2E 不穩定測試、路由拆分、CI 固定 Ubuntu 版本、套件弱點 | 實作中 |
+| F2-02 | 資料模型（題組版本、試卷快照、作答） | 未開始 |
+| F2-03 | 題庫管理後台 | 未開始 |
+| F2-04 | 練習引擎 | 未開始 |
+| F2-05 | 模擬測驗引擎 | 未開始 |
+| F2-06 | 計分與分析 | 未開始 |
+
+### F2-01 已完成（程式碼）
+
+1. **版號 2.1.0**：`Directory.Build.props`、`src/frontend/package.json`、`tests/e2e/package.json`、兩個 `package-lock.json` 根項目、版本整合測試、`CLAUDE.md`、`docs/requirements.md`。
+2. **系統信件改用寄件匣**（ADR 0006，處理 Phase 1 未解決事項第 7 點）：
+   - 請求只排入 `EmailOutbox`，由背景服務寄出；失敗依 1、5、15、30 倍基準間隔重試，用盡後標記失敗並寫稽核紀錄 `email.delivery_failed`。
+   - 資料表不保存收件者、內容、連結或 Token；寄出時才產生 Token。
+   - 同一使用者同一種類不重複排入；多執行個體以 rowversion 搶占。
+3. **開發環境信件檔**：`Email:Provider=File` 時存成 `src/backend/LanguageLearning.Api/App_Data/mail/*.html`（已列入 `.gitignore`）；正式環境禁止使用 `File`。
+4. **測試**：
+   - 整合測試改為等待背景服務寄出的信件；新增 `EmailOutboxTests`（SMTP 失敗時註冊仍成功並於重試後寄出、錯誤訊息與日誌遮蔽 Email、排隊中不重複寄送、重試用盡標記失敗並寫稽核、未知 Email 不排入、資料表欄位限制）。
+   - 新增單元測試 `EmailInfrastructureTests`（信件檔內容、正式環境拒絕 `File`、寄件匣設定範圍）。
+5. **E2E**：
+   - 關閉動畫（`reducedMotion: 'reduce'`），處理 Phase 1 未解決事項第 8 點（axe 在通知淡入途中量到半透明文字）。
+   - 本機預設讀取信件檔，不需要 Mailpit；CI 設定 `E2E_MAIL_MODE=mailpit`，仍以 SMTP 寄到 Mailpit。
+6. **前端路由拆分**（Phase 1 未解決事項第 2 點，尚未達標）：首頁與登入頁直接載入，其餘頁面以 `React.lazy` 在第一次進入時下載。
+7. **CI 固定 `ubuntu-24.04`**（Phase 1 未解決事項第 9 點）：`ci.yml`、`bootstrap.yml`。
+8. **Migration `AddEmailOutbox`**：於開發者本機產生（2026-11-14）。
+
+### F2-01 待完成
+
+1. 前端主程式 chunk 仍為 523.73 KB，超過 500 KB（Phase 1 為 641 KB）；需再拆分（登入頁目前仍直接載入，含表單與 Zod）。
+2. 本機測試：後端單元 / 整合、前端 lint / test、E2E（無障礙測試重複 10 次確認不再不穩定）。
+3. `npm audit`：依實際輸出，對有修正版的開發相依套件加入 `overrides`（Phase 1 未解決事項第 1 點）。
+4. 開發者建立 tag `v1.0.0`（`93f2f05`）。
+
+### Build 與測試結果
+
+本機（Windows、.NET SDK 10.0.401、Node 24），2026-11-14，以 `TestResults/local-build/build-local.cmd` 執行（該資料夾不提交）。
+
+| 項目 | 結果 |
+|---|---|
+| `dotnet build`（Debug，第一次） | **失敗**：① 新單元測試違反 xUnit1051（未傳 `TestContext.Current.CancellationToken`），已修正；② 本機有執行中的 `LanguageLearning.Api` 鎖住 `bin/Debug` 的 DLL（環境問題） |
+| `dotnet build -c Release`（修正後） | **通過**：警告 0、錯誤 0（含單元與整合測試專案） |
+| `dotnet ef migrations add AddEmailOutbox` | **已產生**：`20261114033650_AddEmailOutbox` |
+| `dotnet ef migrations has-pending-model-changes` | **通過**：模型與 Migration 一致 |
+| `npm run build`（含 `tsc -b` 型別檢查） | **通過**，但主程式 chunk 523.73 KB 仍超過 500 KB 警告門檻；其餘頁面已拆成獨立 chunk |
+| `dotnet test`（單元 / 整合） | **未執行** |
+| `npm run lint` / `npm test` | **未執行** |
+| `npm audit` | **未執行** |
+| Playwright E2E | **未執行** |
+
 ## Phase 1 — 基礎建設（v1.0.0）
 
 狀態：**驗收完成**。本機建置與測試通過；GitHub Actions CI（後端、前端、E2E）於 2026-11-13 全部通過（見下方「Build 與測試結果」）。

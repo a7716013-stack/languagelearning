@@ -2,6 +2,7 @@ using LanguageLearning.Application.Abstractions;
 using LanguageLearning.Domain.Auditing;
 using LanguageLearning.Domain.Exams;
 using LanguageLearning.Domain.Goals;
+using LanguageLearning.Infrastructure.Email;
 using LanguageLearning.Infrastructure.Identity;
 using LanguageLearning.Infrastructure.Persistence.Converters;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -19,6 +20,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<UserExamGoal> UserExamGoals => Set<UserExamGoal>();
 
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    public DbSet<EmailOutboxMessage> EmailOutbox => Set<EmailOutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

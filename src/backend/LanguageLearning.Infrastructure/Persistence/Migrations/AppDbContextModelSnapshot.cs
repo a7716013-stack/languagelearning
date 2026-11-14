@@ -248,6 +248,58 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                     b.ToTable("UserExamGoals", (string)null);
                 });
 
+            modelBuilder.Entity("LanguageLearning.Infrastructure.Email.EmailOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime?>("LastAttemptAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "NextAttemptAtUtc");
+
+                    b.HasIndex("UserId", "Kind", "Status");
+
+                    b.ToTable("EmailOutbox", (string)null);
+                });
+
             modelBuilder.Entity("LanguageLearning.Infrastructure.Identity.ApplicationRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -513,6 +565,15 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ExamType");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Infrastructure.Email.EmailOutboxMessage", b =>
+                {
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

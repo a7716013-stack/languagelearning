@@ -83,7 +83,7 @@ public sealed class AdminAndSystemTests(ApiFixture fixture) : IClassFixture<ApiF
         using var client = Factory.CreateTestClient();
 
         var version = await TestClient.ReadJsonAsync(await client.GetAsync("/api/version"));
-        Assert.Equal("1.0.0", version.GetProperty("version").GetString());
+        Assert.Equal("2.1.0", version.GetProperty("version").GetString());
         Assert.Equal("Testing", version.GetProperty("environment").GetString());
 
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live")).StatusCode);

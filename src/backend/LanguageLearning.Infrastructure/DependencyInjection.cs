@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using LanguageLearning.Application.Abstractions;
 using LanguageLearning.Application.Admin;
 using LanguageLearning.Application.Auth;
@@ -12,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace LanguageLearning.Infrastructure;
 
@@ -30,6 +33,12 @@ public static class DependencyInjection
         services.AddOptions<EmailOptions>()
             .Bind(configuration.GetSection(EmailOptions.SectionName))
             .ValidateDataAnnotations()
+            .Validate(
+                options => Validator.TryValidateObject(options.Outbox, new ValidationContext(options.Outbox), null, validateAllProperties: true),
+                "Email:Outbox 設定值超出允許範圍。")
+            .Validate<IHostEnvironment>(
+                (options, environment) => !(environment.IsProduction() && options.Provider == EmailProvider.File),
+                "正式環境不可使用 Email:Provider=File（只會把信件存成檔案，不會寄出）。")
             .ValidateOnStart();
         services.AddOptions<SeedOptions>().Bind(configuration.GetSection(SeedOptions.SectionName));
         services.AddOptions<DatabaseOptions>().Bind(configuration.GetSection(DatabaseOptions.SectionName));
@@ -91,7 +100,17 @@ public static class DependencyInjection
         services.AddScoped<IUserTimeZoneResolver, UserTimeZoneResolver>();
         services.AddScoped<IAuditLogger, AuditLogger>();
         services.AddScoped<DatabaseInitializer>();
-        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
+        // 寄信：請求只把信件排入寄件匣，由背景服務非同步寄出並重試。
+        services.AddSingleton<IEmailSender>(sp =>
+            sp.GetRequiredService<IOptions<EmailOptions>>().Value.Provider == EmailProvider.File
+                ? ActivatorUtilities.CreateInstance<FileEmailSender>(sp)
+                : ActivatorUtilities.CreateInstance<SmtpEmailSender>(sp));
+        services.AddSingleton<EmailOutboxSignal>();
+        services.AddSingleton<EmailOutboxDispatcher>();
+        services.AddScoped<IAccountEmailQueue, EmailOutboxQueue>();
+        services.AddScoped<AccountEmailComposer>();
+        services.AddHostedService<EmailOutboxBackgroundService>();
 
         return services;
     }
