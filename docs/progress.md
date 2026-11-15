@@ -2,60 +2,75 @@
 
 ## Phase 2 — 題庫與測驗引擎（v2.1.0，開發中）
 
-狀態：**F2-01（穩定性）實作中**。分支 `fix/phase1-stability`（由 `main` `93f2f05` 建立）；已通過本機建置，測試尚未執行。
+狀態：**F2-01（穩定性）本機驗證完成，待 GitHub Actions CI**。分支 `fix/phase1-stability`（由 `main` `93f2f05` 建立）。
 討論結論見 [docs/phase2/00-decisions.md](phase2/00-decisions.md)；版號決策見 ADR 0005。
 
 ### 工作包
 
 | 工作包 | 內容 | 狀態 |
 |---|---|---|
-| F2-01 | 穩定性：寄信改非同步、開發環境信件檔、E2E 不穩定測試、路由拆分、CI 固定 Ubuntu 版本、套件弱點 | 實作中 |
+| F2-01 | 穩定性：寄信改非同步、開發環境信件檔、E2E 不穩定測試、路由拆分、CI 固定 Ubuntu 版本、套件弱點 | 本機驗證完成，待 CI |
 | F2-02 | 資料模型（題組版本、試卷快照、作答） | 未開始 |
 | F2-03 | 題庫管理後台 | 未開始 |
 | F2-04 | 練習引擎 | 未開始 |
 | F2-05 | 模擬測驗引擎 | 未開始 |
 | F2-06 | 計分與分析 | 未開始 |
 
-### F2-01 已完成（程式碼）
+### F2-01 已完成
 
 1. **版號 2.1.0**：`Directory.Build.props`、`src/frontend/package.json`、`tests/e2e/package.json`、兩個 `package-lock.json` 根項目、版本整合測試、`CLAUDE.md`、`docs/requirements.md`。
 2. **系統信件改用寄件匣**（ADR 0006，處理 Phase 1 未解決事項第 7 點）：
    - 請求只排入 `EmailOutbox`，由背景服務寄出；失敗依 1、5、15、30 倍基準間隔重試，用盡後標記失敗並寫稽核紀錄 `email.delivery_failed`。
    - 資料表不保存收件者、內容、連結或 Token；寄出時才產生 Token。
    - 同一使用者同一種類不重複排入；多執行個體以 rowversion 搶占。
+   - Migration `20261114033650_AddEmailOutbox`（於開發者本機產生）。
 3. **開發環境信件檔**：`Email:Provider=File` 時存成 `src/backend/LanguageLearning.Api/App_Data/mail/*.html`（已列入 `.gitignore`）；正式環境禁止使用 `File`。
-4. **測試**：
+4. **後端測試**：
    - 整合測試改為等待背景服務寄出的信件；新增 `EmailOutboxTests`（SMTP 失敗時註冊仍成功並於重試後寄出、錯誤訊息與日誌遮蔽 Email、排隊中不重複寄送、重試用盡標記失敗並寫稽核、未知 Email 不排入、資料表欄位限制）。
    - 新增單元測試 `EmailInfrastructureTests`（信件檔內容、正式環境拒絕 `File`、寄件匣設定範圍）。
-5. **E2E**：
-   - 關閉動畫（`reducedMotion: 'reduce'`），處理 Phase 1 未解決事項第 8 點（axe 在通知淡入途中量到半透明文字）。
+5. **E2E**（處理 Phase 1 未解決事項第 8 點）：
+   - 關閉動畫（`reducedMotion: 'reduce'`）：axe 不再於通知淡入途中量到半透明文字；無障礙測試重複 10 次全部通過。
    - 本機預設讀取信件檔，不需要 Mailpit；CI 設定 `E2E_MAIL_MODE=mailpit`，仍以 SMTP 寄到 Mailpit。
-6. **前端路由拆分**（Phase 1 未解決事項第 2 點，尚未達標）：首頁與登入頁直接載入，其餘頁面以 `React.lazy` 在第一次進入時下載。
-7. **CI 固定 `ubuntu-24.04`**（Phase 1 未解決事項第 9 點）：`ci.yml`、`bootstrap.yml`。
-8. **Migration `AddEmailOutbox`**：於開發者本機產生（2026-11-14）。
+   - 明確設定 `Auth__RequireConfirmedEmail=true`：開發者的 user-secrets 若為了試用關閉 Email 驗證，不再影響 E2E。
+6. **前端路由拆分**（Phase 1 未解決事項第 2 點）：
+   - 只有首頁直接載入，其餘頁面（含登入頁）在第一次進入時才下載；主程式 chunk 由 641 KB 降為 397 KB，不再出現 500 KB 警告。
+   - 第一版保留登入頁直接載入時仍有 523.73 KB（表單與 Zod 在主程式），因此再把登入頁移出。
+   - 頁面程式碼下載失敗（例如剛好斷線）時，在原版面內顯示「無法載入頁面」與重試按鈕（`PageLoadError`），不再整頁變成 React Router 錯誤畫面。E2E「離線時顯示網路狀態提示」因此問題失敗後修正；新增單元測試 `lazy-page.test.tsx`。
+7. **套件弱點**（Phase 1 未解決事項第 1 點）：`src/frontend/package.json` 以限定範圍的 `overrides` 將 `minimatch` 升至 11.0.8（eslint、@eslint/config-array、@typescript-eslint/typescript-estree）、`glob` 升至 14.0.6（workbox-build）。中風險弱點全數消除；剩餘見「已知限制」。
+8. **CI 固定 `ubuntu-24.04`**（Phase 1 未解決事項第 9 點）：`ci.yml`、`bootstrap.yml`。
+
+### 已知限制
+
+1. `npm audit`（前端）剩 4 個低風險：`deepmerge` 4.3.1（GHSA-gcqx-w48m-w2h4，影響 >=4.2.0 <=4.3.1，**目前沒有修正版**），經由 `@rollup/plugin-node-resolve` → `workbox-build` → `vite-plugin-pwa` 帶入，只在 PWA 建置時合併本專案自己的設定，不會進入網站程式。`npm audit fix --force` 會降版 `workbox-build` 至 5.x，不採用。待上游發布修正版後移除。
+2. 整合測試不會刪除 `ll_test_*` 資料庫；E2E 每次建立 `LanguageLearningE2E_*` 資料庫。兩者都在本機 LocalDB 執行個體 `LanguageLearningTest`，可用 `sqllocaldb` 整個刪除重建。
 
 ### F2-01 待完成
 
-1. 前端主程式 chunk 仍為 523.73 KB，超過 500 KB（Phase 1 為 641 KB）；需再拆分（登入頁目前仍直接載入，含表單與 Zod）。
-2. 本機測試：後端單元 / 整合、前端 lint / test、E2E（無障礙測試重複 10 次確認不再不穩定）。
-3. `npm audit`：依實際輸出，對有修正版的開發相依套件加入 `overrides`（Phase 1 未解決事項第 1 點）。
-4. 開發者建立 tag `v1.0.0`（`93f2f05`）。
+1. 開發者建立 tag `v1.0.0`（`93f2f05`）。
+2. 推送後執行 GitHub Actions CI（只推送分支不會觸發；需開 PR 或手動執行）。
 
 ### Build 與測試結果
 
-本機（Windows、.NET SDK 10.0.401、Node 24），2026-11-14，以 `TestResults/local-build/build-local.cmd` 執行（該資料夾不提交）。
+本機（Windows、.NET SDK 10.0.401、Node 24、LocalDB 17.0.4025.3），以 `TestResults/local-build/*.cmd` 執行（該資料夾不提交）。
 
-| 項目 | 結果 |
-|---|---|
-| `dotnet build`（Debug，第一次） | **失敗**：① 新單元測試違反 xUnit1051（未傳 `TestContext.Current.CancellationToken`），已修正；② 本機有執行中的 `LanguageLearning.Api` 鎖住 `bin/Debug` 的 DLL（環境問題） |
-| `dotnet build -c Release`（修正後） | **通過**：警告 0、錯誤 0（含單元與整合測試專案） |
-| `dotnet ef migrations add AddEmailOutbox` | **已產生**：`20261114033650_AddEmailOutbox` |
-| `dotnet ef migrations has-pending-model-changes` | **通過**：模型與 Migration 一致 |
-| `npm run build`（含 `tsc -b` 型別檢查） | **通過**，但主程式 chunk 523.73 KB 仍超過 500 KB 警告門檻；其餘頁面已拆成獨立 chunk |
-| `dotnet test`（單元 / 整合） | **未執行** |
-| `npm run lint` / `npm test` | **未執行** |
-| `npm audit` | **未執行** |
-| Playwright E2E | **未執行** |
+| 項目 | 日期 | 結果 |
+|---|---|---|
+| `dotnet build`（Debug，第一次） | 11-14 | **失敗**：① 新單元測試違反 xUnit1051（未傳 `TestContext.Current.CancellationToken`），已修正；② 本機有執行中的 `LanguageLearning.Api` 鎖住 `bin/Debug` 的 DLL（環境問題） |
+| `dotnet build -c Release` | 11-14、11-16 | **通過**：警告 0、錯誤 0（含單元與整合測試專案） |
+| `dotnet ef migrations has-pending-model-changes` | 11-14 | **通過**：模型與 Migration 一致 |
+| `dotnet test`（單元） | 11-16 | **通過**：75 通過、0 失敗、0 略過 |
+| `dotnet test`（整合，第一次） | 11-16 | **未能執行**：本機沒有 LocalDB 執行個體 `LanguageLearningTest`，40 個測試都無法連線（環境問題） |
+| `dotnet test`（整合，建立執行個體後） | 11-16 | **通過**：40 通過、0 失敗、0 略過 |
+| `npm run typecheck` | 11-16 | **通過** |
+| `npm test` | 11-16 | **通過**：51 通過（8 個檔案） |
+| `npm run build` | 11-16 | **通過**：主程式 chunk 397.41 KB；PWA 預先快取 41 個檔案（套用 overrides 前後相同） |
+| `npm audit`（前端，套用 overrides 前 / 後） | 11-16 | 14 個（2 低、12 中）→ **4 個低**（見已知限制 1） |
+| `npm audit`（tests/e2e） | 11-16 | **0 個** |
+| Playwright E2E（第一次） | 11-16 | 16 通過、**2 失敗**（user-secrets 關閉 Email 驗證；延遲載入頁面在斷線時整頁錯誤），已修正 |
+| Playwright E2E（修正後） | 11-16 | **通過**：18 通過、0 失敗（在 lint 修正前執行；lint 修正只把 `PageLoadError` 移到獨立檔案，行為不變，E2E 未重跑） |
+| 無障礙測試 `--repeat-each=10` | 11-16 | **通過**：60 通過、0 失敗 |
+| `npm run lint`（第一次） | 11-16 | **失敗**：`lazy-page.tsx` 同檔匯出函式又定義元件（react-refresh 規則），已將元件移至 `PageLoadError.tsx` |
+| `npm run lint`（修正後） | 11-16 | **通過**；同時重跑型別檢查、`npm test`（51 通過）、`npm run build`（主程式 397.41 KB）皆通過 |
 
 ## Phase 1 — 基礎建設（v1.0.0）
 

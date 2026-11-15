@@ -74,6 +74,8 @@ export default defineConfig({
             ...emailEnv,
             Email__Outbox__PollIntervalSeconds: '1',
             RateLimiting__Auth__PermitLimit: '1000',
+            // 明確開啟 Email 驗證：開發者的 user-secrets 可能為了本機試用而關閉它，E2E 不應受影響。
+            Auth__RequireConfirmedEmail: 'true',
             Seed__Admin__Email: adminEmail,
             Seed__Admin__Password: process.env.E2E_ADMIN_PASSWORD ?? '',
           },

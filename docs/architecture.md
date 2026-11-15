@@ -72,7 +72,7 @@ SerilogRequestLogging → ExceptionHandler（ProblemDetails）→ StatusCodePage
 | `src/services` | `api-client.ts`（同源 fetch、CSRF、ProblemDetails → `ApiError`）、`api.ts` |
 | `src/hooks`、`src/lib`、`src/types`、`src/styles` | 共用 Hook、工具、DTO 型別、設計 Token |
 
-- 路由拆分：首頁與登入頁直接載入，其餘頁面以 `React.lazy` 拆成獨立 chunk（`src/app/router.tsx`）。
+- 路由拆分：只有首頁直接載入，其餘頁面（含登入頁）以 `lazyPage`（`src/app/lazy-page.tsx`，React.lazy + Suspense）拆成獨立 chunk，表單套件不進入主程式；下載失敗時在原版面內顯示 `PageLoadError` 與重試按鈕。
 - 路由守衛：`RequireAuth`（未登入導向 `/login?returnTo=`，returnTo 僅允許站內路徑）、`RequireOnboarding`、`RequireRole`、`GuestOnly`。
 - 版面：桌面左側導覽、手機底部導航；Light / Dark Mode（偏好存在 localStorage 並同步到使用者設定）。
 - PWA：`vite-plugin-pwa`，`registerType: 'prompt'`（新版本提示）；`/api`、`/health` 不走 SPA 回退且 NetworkOnly；正式建置加入 CSP meta。

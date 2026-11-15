@@ -1,27 +1,15 @@
-import { type ComponentType, lazy, Suspense } from 'react'
 import { createBrowserRouter, type RouteObject } from 'react-router'
-import { LoadingState } from '@/components/layout/states'
-import { LoginPage } from '@/features/auth/LoginPage'
 import { AppLayout } from './layouts/AppLayout'
 import { AuthLayout } from './layouts/AuthLayout'
 import { OnboardingLayout } from './layouts/OnboardingLayout'
+import { lazyPage } from './lazy-page'
 import { NotFoundPage } from './routes/ErrorPages'
 import { GuestOnly, RequireAuth, RequireOnboarding, RequireRole } from './routes/guards'
 import { LandingPage } from './routes/LandingPage'
 
-/**
- * 依頁面切分程式碼：首頁與登入頁直接載入（最常見的進入點），
- * 其餘頁面在第一次進入時才下載。版面（Layout）與路由守衛不切分，載入頁面時頁首仍會保留。
- */
-function lazyPage(load: () => Promise<ComponentType>) {
-  const Page = lazy(async () => ({ default: await load() }))
-  return (
-    <Suspense fallback={<LoadingState className="p-6" />}>
-      <Page />
-    </Suspense>
-  )
-}
-
+// 依頁面切分程式碼：只有首頁直接載入，其餘頁面（包含登入頁）在第一次進入時才下載，
+// 表單相關套件（React Hook Form、Zod）因此不會進入主程式。版面與路由守衛不切分。
+const loginPage = lazyPage(async () => (await import('@/features/auth/LoginPage')).LoginPage)
 const registerPage = lazyPage(async () => (await import('@/features/auth/RegisterPage')).RegisterPage)
 const forgotPasswordPage = lazyPage(
   async () => (await import('@/features/auth/ForgotPasswordPage')).ForgotPasswordPage,
@@ -48,7 +36,7 @@ export const routes: RouteObject[] = [
       {
         element: <AuthLayout />,
         children: [
-          { path: '/login', element: <LoginPage /> },
+          { path: '/login', element: loginPage },
           { path: '/register', element: registerPage },
           { path: '/forgot-password', element: forgotPasswordPage },
         ],
