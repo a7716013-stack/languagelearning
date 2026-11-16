@@ -2,15 +2,15 @@
 
 ## Phase 2 — 題庫與測驗引擎（v2.1.0，開發中）
 
-狀態：**F2-01、F2-02 已完成，透過 PR 合併到 `main` 前由 GitHub Actions CI 驗證**。分支 `fix/phase1-stability`（F2-01，由 `main` `93f2f05` 建立）→ `feature/toeic-question-bank`（F2-02）。
+狀態：**F2-01、F2-02 完成**，GitHub Actions CI 全部通過（PR #2），合併到 `main`。下一步 F2-03。分支 `fix/phase1-stability`（F2-01，由 `main` `93f2f05` 建立）→ `feature/toeic-question-bank`（F2-02）。
 討論結論見 [docs/phase2/00-decisions.md](phase2/00-decisions.md)；版號決策見 ADR 0005。
 
 ### 工作包
 
 | 工作包 | 內容 | 狀態 |
 |---|---|---|
-| F2-01 | 穩定性：寄信改非同步、開發環境信件檔、E2E 不穩定測試、路由拆分、CI 固定 Ubuntu 版本、套件弱點 | 本機驗證完成，待 CI |
-| F2-02 | 資料模型（題組版本、試卷快照、作答） | 實作完成，待 CI（[02-database-design.md](phase2/02-database-design.md)、ADR 0007、0008） |
+| F2-01 | 穩定性：寄信改非同步、開發環境信件檔、E2E 不穩定測試、路由拆分、CI 固定 Ubuntu 版本、套件弱點 | 完成（本機與 CI 通過） |
+| F2-02 | 資料模型（題組版本、試卷快照、作答） | 完成（CI 通過；[02-database-design.md](phase2/02-database-design.md)、ADR 0007、0008） |
 | F2-03 | 題庫管理後台 | 未開始 |
 | F2-04 | 練習引擎 | 未開始 |
 | F2-05 | 模擬測驗引擎 | 未開始 |
@@ -57,7 +57,6 @@
 ### F2-01 待完成
 
 1. 開發者建立 tag `v1.0.0`（`93f2f05`）。
-2. 推送後執行 GitHub Actions CI（只推送分支不會觸發；需開 PR 或手動執行）。
 
 ### Build 與測試結果
 
@@ -85,7 +84,15 @@
 | F2-02 `dotnet ef migrations add AddQuestionBank` / `has-pending-model-changes` | 11-16 | **已產生** / **通過** |
 | F2-02 單元測試 | 11-16 | **通過**：116 通過、0 失敗（含 Phase 1 與 F2-01 的 75 個） |
 | F2-02 整合測試（第一次） | 11-16 | 46 通過、**1 失敗**：建立新版本後在同一次儲存內發布，被不可變防護誤擋（只允許新增草稿）；已改為新增時可為草稿或已發布 |
-| F2-02 整合測試（修正後） | — | **本機未執行**：開發者選擇改由 PR 的 GitHub Actions CI 驗證 |
+| F2-02 整合測試（修正後） | — | **本機未執行**：開發者選擇改由 PR 的 GitHub Actions CI 驗證（見下表） |
+
+GitHub Actions CI（PR #2，`ubuntu-24.04`，commit `6384dcf`，2026-11-17，[run 43923353539](https://github.com/a7716013-stack/languagelearning/actions/runs/43923353539)）：
+
+| Job | 結果 |
+|---|---|
+| Backend | **通過**：建置警告 0、錯誤 0；`has-pending-model-changes` 無變更；單元測試 116 通過；整合測試（SQL Server 容器）47 通過、0 失敗 |
+| Frontend | **通過**：lint、型別檢查、測試 51 通過（8 個檔案）、建置（主程式 397.41 KB，PWA 預先快取 41 個檔案）；`npm audit` 4 個低風險（已知限制 1） |
+| E2E（Playwright + axe，Mailpit） | **通過**：18 通過；`tests/e2e` 的 `npm audit` 0 個 |
 
 ## Phase 1 — 基礎建設（v1.0.0）
 
