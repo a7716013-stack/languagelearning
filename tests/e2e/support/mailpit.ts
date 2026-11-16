@@ -11,7 +11,7 @@ interface MailpitMessage {
 }
 
 /** 等待寄給指定 Email、且包含指定路徑連結的信件，回傳連結。 */
-export async function waitForEmailLink(email: string, path: string): Promise<string> {
+export async function waitForMailpitLink(email: string, path: string): Promise<string> {
   let link: string | undefined
 
   await expect

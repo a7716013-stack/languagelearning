@@ -19,7 +19,7 @@ public sealed class AuthFlowTests(ApiFixture fixture) : IClassFixture<ApiFixture
             new { email, password = TestUsers.Password, displayName = "小明" });
         await TestClient.EnsureStatusAsync(register, HttpStatusCode.Accepted);
 
-        var query = Factory.Emails.LatestLinkQuery(email, "/confirm-email");
+        var query = await Factory.Emails.WaitForLinkQueryAsync(email, "/confirm-email");
         var confirm = await client.PostAsync(
             "/api/auth/confirm-email",
             new { userId = query["userId"], token = query["token"] });
@@ -116,7 +116,7 @@ public sealed class AuthFlowTests(ApiFixture fixture) : IClassFixture<ApiFixture
             new { email, password = "Another1Pass", displayName = "重複" });
 
         Assert.Equal(HttpStatusCode.Accepted, again.StatusCode);
-        var notices = Factory.Emails.For(email);
+        var notices = await Factory.Emails.WaitForCountAsync(email, before + 1);
         Assert.Equal(before + 1, notices.Count);
         Assert.Contains("已註冊", notices[^1].Subject, StringComparison.Ordinal);
 
@@ -135,7 +135,7 @@ public sealed class AuthFlowTests(ApiFixture fixture) : IClassFixture<ApiFixture
         var forgot = await client.PostAsync("/api/auth/forgot-password", new { email });
         await TestClient.EnsureStatusAsync(forgot, HttpStatusCode.Accepted);
 
-        var query = Factory.Emails.LatestLinkQuery(email, "/reset-password");
+        var query = await Factory.Emails.WaitForLinkQueryAsync(email, "/reset-password");
         var reset = await client.PostAsync(
             "/api/auth/reset-password",
             new { userId = query["userId"], token = query["token"], newPassword });
@@ -164,7 +164,7 @@ public sealed class AuthFlowTests(ApiFixture fixture) : IClassFixture<ApiFixture
         var response = await client.PostAsync("/api/auth/forgot-password", new { email });
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.Empty(Factory.Emails.For(email));
+        await Factory.Emails.AssertNoneForAsync(email, TimeSpan.FromSeconds(2));
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public sealed class AuthFlowTests(ApiFixture fixture) : IClassFixture<ApiFixture
         var email = TestUsers.NewEmail();
         using var client = Factory.CreateTestClient();
         await client.PostAsync("/api/auth/register", new { email, password = TestUsers.Password, displayName = "x" });
-        var query = Factory.Emails.LatestLinkQuery(email, "/confirm-email");
+        var query = await Factory.Emails.WaitForLinkQueryAsync(email, "/confirm-email");
 
         var response = await client.PostAsync(
             "/api/auth/confirm-email",

@@ -19,4 +19,5 @@ public static class AuditActions
     public const string ExamGoalSaved = "user.exam_goal.saved";
     public const string OnboardingCompleted = "user.onboarding.completed";
     public const string AdminSeeded = "admin.seeded";
+    public const string EmailDeliveryFailed = "email.delivery_failed";
 }

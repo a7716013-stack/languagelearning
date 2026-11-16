@@ -1,7 +1,7 @@
 # LanguageLearning
 
 AI 英文檢定學習平台。第一版先支援 **TOEIC Listening & Reading**，架構可擴充至 IELTS、TOEFL。
-目前版本：**1.0.0（Phase 1：基礎建設）**。
+目前開發版本：**2.1.0（Phase 2：題庫與測驗引擎，開發中）**。已發布：1.0.0（Phase 1：基礎建設）。
 
 > TOEIC 為 ETS 的註冊商標。本平台與 ETS 無隸屬或合作關係，所有練習內容均為自行編寫。
 
@@ -12,7 +12,7 @@ AI 英文檢定學習平台。第一版先支援 **TOEIC Listening & Reading**�
 | 後端 | ASP.NET Core 10（Minimal API）、EF Core 10、SQL Server、ASP.NET Core Identity（Cookie）、FluentValidation、Serilog |
 | 前端 | React 19、TypeScript、Vite、Tailwind CSS 4、shadcn/ui、React Router、TanStack Query、React Hook Form + Zod、PWA |
 | 測試 | xUnit v3、Testcontainers（SQL Server）、Vitest、Testing Library、Playwright + axe |
-| DevOps | Docker Compose（SQL Server、Mailpit）、GitHub Actions |
+| DevOps | Docker Compose（SQL Server、Mailpit）、GitHub Actions（`ubuntu-24.04`） |
 
 架構說明見 [docs/architecture.md](docs/architecture.md)，進度與測試結果見 [docs/progress.md](docs/progress.md)，完整需求見 [docs/requirements.md](docs/requirements.md)。
 
@@ -20,7 +20,7 @@ AI 英文檢定學習平台。第一版先支援 **TOEIC Listening & Reading**�
 
 - .NET SDK 10.x
 - Node.js 22.22 以上（建議 24 LTS，見 `.nvmrc`）
-- Docker Desktop / Docker Engine（執行中）
+- Docker Desktop / Docker Engine（執行中）；沒有 Docker 時可改用 Windows 的 SQL Server LocalDB（見「測試」），信件會存成本機檔案
 
 > Apple Silicon Mac：SQL Server 映像只提供 x86_64，請在 Docker Desktop 開啟 Rosetta（x86_64/amd64 模擬），並配置至少 2 GB 記憶體。
 
@@ -50,7 +50,11 @@ npm ci
 npm run dev
 ```
 
-- 驗證信與重設密碼信：開啟 Mailpit http://localhost:8025
+- 驗證信與重設密碼信：開發環境（`appsettings.Development.json` 的 `Email:Provider=File`）不會寄出，而是存成
+  `src/backend/LanguageLearning.Api/App_Data/mail/*.html`，用瀏覽器開啟後點擊連結即可。此資料夾已列入 `.gitignore`；
+  檔案含有效的驗證 / 重設連結，請勿提交或分享。
+- 若要改用 Mailpit 收信：`dotnet user-secrets --project src/backend/LanguageLearning.Api set "Email:Provider" "Smtp"`，再開啟 http://localhost:8025
+- 信件由背景服務寄出（寄件匣 `EmailOutbox`），寄送失敗會自動重試，見 [ADR 0006](docs/decisions/0006-email-outbox-and-dev-mail-files.md)
 - 健康檢查：http://localhost:5080/health/live、http://localhost:5080/health/ready
 - 版本：http://localhost:5080/api/version
 
@@ -79,7 +83,9 @@ dotnet test --project tests/backend/LanguageLearning.IntegrationTests/LanguageLe
 # 前端
 cd src/frontend && npm run lint && npm run typecheck && npm test && npm run build
 
-# E2E（需要 docker compose 的 SQL Server 與 Mailpit；Playwright 會自動啟動 API 與前端 preview）
+# E2E（Playwright 會自動啟動 API 與前端 preview）
+# 本機預設：API 把信件存成檔案，測試從 src/backend/LanguageLearning.Api/App_Data/mail 讀取，不需要 Mailpit。
+# 要改用 Mailpit（CI 的做法）：設定 E2E_MAIL_MODE=mailpit，並啟動 docker compose。
 cd tests/e2e
 npm ci && npx playwright install chromium
 E2E_CONNECTION_STRING="<連線字串>" E2E_ADMIN_PASSWORD="<管理者密碼>" npx playwright test

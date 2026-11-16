@@ -22,7 +22,7 @@ env:
 jobs:
   backend:
     name: Backend（Build、單元測試、整合測試）
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -61,7 +61,7 @@ jobs:
 
   frontend:
     name: Frontend（Lint、型別檢查、測試、Build）
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -95,7 +95,7 @@ jobs:
   e2e:
     name: E2E（Playwright + axe）
     needs: [backend, frontend]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
@@ -139,6 +139,9 @@ jobs:
 
       - name: 執行 E2E
         working-directory: tests/e2e
+        env:
+          # CI 以 SMTP 寄到 Mailpit，驗證正式寄信路徑；本機預設改用信件檔。
+          E2E_MAIL_MODE: mailpit
         run: npx playwright test
 
       - name: 上傳 Playwright 報告

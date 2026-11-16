@@ -4,7 +4,7 @@
     前端版本定義於 src/frontend/package.json，兩者必須一致（CI 與單元測試會檢查）。
   -->
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>2.1.0</Version>
     <Product>LanguageLearning</Product>
     <Company>LanguageLearning</Company>
     <Copyright>Copyright © LanguageLearning</Copyright>

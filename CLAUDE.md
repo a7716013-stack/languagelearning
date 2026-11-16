@@ -34,4 +34,4 @@ AI 英文檢定學習平台（先做 TOEIC L&R）。ASP.NET Core 10 + EF Core 10
 - E2E（tests/e2e）：`npm ci`、`npx playwright install chromium`、`npx playwright test`
 
 ## 版本
-目前版本 1.0.0。後端版本只改 Directory.Build.props；前端只改 src/frontend/package.json；兩者必須一致（單元測試與 CI 會檢查）。
+目前開發版本 2.1.0（Phase 2）。後端版本只改 Directory.Build.props；前端只改 src/frontend/package.json；兩者必須一致（單元測試與 CI 會檢查）。

@@ -22,6 +22,9 @@ tests/e2e/playwright-report/
 tests/e2e/blob-report/
 tests/e2e/.cache/
 
+# 本機開發產生的信件檔（內含可用的驗證 / 重設連結）與媒體檔
+**/App_Data/
+
 # 環境與 Secret（絕不提交）
 .env
 .env.*

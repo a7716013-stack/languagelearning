@@ -2,7 +2,6 @@ using System.Text;
 using LanguageLearning.Application.Abstractions;
 using LanguageLearning.Application.Auth;
 using LanguageLearning.Application.Common.Auditing;
-using LanguageLearning.Application.Common.Email;
 using LanguageLearning.Application.Common.Results;
 using LanguageLearning.Application.Common.Security;
 using LanguageLearning.Application.Common.Time;
@@ -11,7 +10,6 @@ using LanguageLearning.Domain.Auditing;
 using LanguageLearning.Infrastructure.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace LanguageLearning.Infrastructure.Identity;
@@ -19,13 +17,11 @@ namespace LanguageLearning.Infrastructure.Identity;
 internal sealed class AuthService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
-    IEmailSender emailSender,
+    IAccountEmailQueue emailQueue,
     IAuditLogger auditLogger,
     ICurrentUser currentUser,
-    IOptions<AppOptions> appOptions,
     IOptions<AuthOptions> authOptions,
-    TimeProvider timeProvider,
-    ILogger<AuthService> logger) : IAuthService
+    TimeProvider timeProvider) : IAuthService
 {
     // 用於帳號不存在時仍執行一次密碼雜湊，降低以回應時間推測帳號是否存在的風險。
     private static readonly ApplicationUser TimingDummyUser = new() { UserName = "timing-dummy" };
@@ -38,13 +34,10 @@ internal sealed class AuthService(
         var existing = await userManager.FindByEmailAsync(email);
         if (existing is not null)
         {
-            var notice = existing.EmailConfirmed
-                ? EmailTemplates.AccountAlreadyExists(
-                    existing.Email!,
-                    existing.DisplayName,
-                    BuildLink("/login", new Dictionary<string, string>()))
-                : await BuildConfirmationEmailAsync(existing);
-            await SendSafelyAsync(notice, cancellationToken);
+            await emailQueue.EnqueueAsync(
+                existing.EmailConfirmed ? AccountEmailKind.AccountAlreadyExists : AccountEmailKind.ConfirmEmail,
+                existing.Id,
+                cancellationToken);
             await AuditAsync(AuditActions.RegisterDuplicate, true, existing.Id, cancellationToken);
             return Result.Success();
         }
@@ -78,7 +71,7 @@ internal sealed class AuthService(
             throw new InvalidOperationException("無法指派 Student 角色，請確認資料庫 Migration 已套用。");
         }
 
-        await SendSafelyAsync(await BuildConfirmationEmailAsync(user), cancellationToken);
+        await emailQueue.EnqueueAsync(AccountEmailKind.ConfirmEmail, user.Id, cancellationToken);
         await AuditAsync(AuditActions.Register, true, user.Id, cancellationToken);
         return Result.Success();
     }
@@ -121,7 +114,7 @@ internal sealed class AuthService(
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         if (user is not null && !user.EmailConfirmed)
         {
-            await SendSafelyAsync(await BuildConfirmationEmailAsync(user), cancellationToken);
+            await emailQueue.EnqueueAsync(AccountEmailKind.ConfirmEmail, user.Id, cancellationToken);
         }
 
         return Result.Success();
@@ -218,19 +211,11 @@ internal sealed class AuthService(
         if (!user.EmailConfirmed)
         {
             // 尚未驗證的帳號改寄驗證信，驗證後即可登入或再重設密碼。
-            await SendSafelyAsync(await BuildConfirmationEmailAsync(user), cancellationToken);
+            await emailQueue.EnqueueAsync(AccountEmailKind.ConfirmEmail, user.Id, cancellationToken);
             return Result.Success();
         }
 
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-        var link = BuildLink(
-            "/reset-password",
-            new Dictionary<string, string>
-            {
-                ["userId"] = user.Id.ToString(),
-                ["token"] = EncodeToken(token),
-            });
-        await SendSafelyAsync(EmailTemplates.ResetPassword(user.Email!, user.DisplayName, link), cancellationToken);
+        await emailQueue.EnqueueAsync(AccountEmailKind.ResetPassword, user.Id, cancellationToken);
         await AuditAsync(AuditActions.PasswordResetRequested, true, user.Id, cancellationToken);
         return Result.Success();
     }
@@ -287,35 +272,6 @@ internal sealed class AuthService(
         return Result.Success();
     }
 
-    private async Task<EmailMessage> BuildConfirmationEmailAsync(ApplicationUser user)
-    {
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-        var link = BuildLink(
-            "/confirm-email",
-            new Dictionary<string, string>
-            {
-                ["userId"] = user.Id.ToString(),
-                ["token"] = EncodeToken(token),
-            });
-        return EmailTemplates.ConfirmEmail(user.Email!, user.DisplayName, link);
-    }
-
-    private Uri BuildLink(string path, IReadOnlyDictionary<string, string> query) =>
-        EmailTemplates.BuildLink(appOptions.Value.PublicBaseUrl, path, query);
-
-    private async Task SendSafelyAsync(EmailMessage message, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await emailSender.SendAsync(message, cancellationToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // 不記錄收件者與連結（含 Token）。使用者可稍後重新寄送。
-            logger.LogError(ex, "寄送系統信件失敗。Subject={Subject}", message.Subject);
-        }
-    }
-
     private Task AuditAsync(
         string action,
         bool succeeded,
@@ -325,9 +281,6 @@ internal sealed class AuthService(
         auditLogger.WriteAsync(
             new AuditEntry(action, succeeded, userId, "User", userId?.ToString(), details),
             cancellationToken);
-
-    private static string EncodeToken(string token) =>
-        WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
     private static bool TryDecodeToken(string encoded, out string token)
     {

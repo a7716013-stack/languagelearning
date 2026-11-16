@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { waitForEmailLink } from '../support/mailpit'
+import { waitForEmailLink } from '../support/mail'
 import { completeOnboarding, confirmEmail, login, PASSWORD, register, uniqueEmail } from '../support/helpers'
 
 test.describe('帳號流程', () => {

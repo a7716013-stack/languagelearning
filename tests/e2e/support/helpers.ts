@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test'
-import { waitForEmailLink } from './mailpit'
+import { waitForEmailLink } from './mail'
 
 export const PASSWORD = 'Student1Pass'
 

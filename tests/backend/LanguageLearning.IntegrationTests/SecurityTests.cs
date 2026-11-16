@@ -103,12 +103,12 @@ public sealed class SecurityTests(ApiFixture fixture) : IClassFixture<ApiFixture
         using var client = Factory.CreateTestClient();
 
         await client.PostAsync("/api/auth/register", new { email, password = TestUsers.Password, displayName = "日誌" });
-        var confirm = Factory.Emails.LatestLinkQuery(email, "/confirm-email");
+        var confirm = await Factory.Emails.WaitForLinkQueryAsync(email, "/confirm-email");
         await client.PostAsync("/api/auth/confirm-email", new { userId = confirm["userId"], token = confirm["token"] });
         await client.LoginAsync(email, "WrongPass123");
         await client.LoginAsync(email, TestUsers.Password);
         await client.PostAsync("/api/auth/forgot-password", new { email });
-        var reset = Factory.Emails.LatestLinkQuery(email, "/reset-password");
+        var reset = await Factory.Emails.WaitForLinkQueryAsync(email, "/reset-password");
         await client.PostAsync(
             "/api/auth/reset-password",
             new { userId = reset["userId"], token = reset["token"], newPassword });
