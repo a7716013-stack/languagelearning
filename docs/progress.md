@@ -2,7 +2,7 @@
 
 ## Phase 2 — 題庫與測驗引擎（v2.1.0，開發中）
 
-狀態：**F2-01（穩定性）本機驗證完成，待 GitHub Actions CI**。分支 `fix/phase1-stability`（由 `main` `93f2f05` 建立）。
+狀態：**F2-01、F2-02 已完成，透過 PR 合併到 `main` 前由 GitHub Actions CI 驗證**。分支 `fix/phase1-stability`（F2-01，由 `main` `93f2f05` 建立）→ `feature/toeic-question-bank`（F2-02）。
 討論結論見 [docs/phase2/00-decisions.md](phase2/00-decisions.md)；版號決策見 ADR 0005。
 
 ### 工作包
@@ -10,7 +10,7 @@
 | 工作包 | 內容 | 狀態 |
 |---|---|---|
 | F2-01 | 穩定性：寄信改非同步、開發環境信件檔、E2E 不穩定測試、路由拆分、CI 固定 Ubuntu 版本、套件弱點 | 本機驗證完成，待 CI |
-| F2-02 | 資料模型（題組版本、試卷快照、作答） | 未開始 |
+| F2-02 | 資料模型（題組版本、試卷快照、作答） | 實作完成，待 CI（[02-database-design.md](phase2/02-database-design.md)、ADR 0007、0008） |
 | F2-03 | 題庫管理後台 | 未開始 |
 | F2-04 | 練習引擎 | 未開始 |
 | F2-05 | 模擬測驗引擎 | 未開始 |
@@ -44,6 +44,16 @@
 1. `npm audit`（前端）剩 4 個低風險：`deepmerge` 4.3.1（GHSA-gcqx-w48m-w2h4，影響 >=4.2.0 <=4.3.1，**目前沒有修正版**），經由 `@rollup/plugin-node-resolve` → `workbox-build` → `vite-plugin-pwa` 帶入，只在 PWA 建置時合併本專案自己的設定，不會進入網站程式。`npm audit fix --force` 會降版 `workbox-build` 至 5.x，不採用。待上游發布修正版後移除。
 2. 整合測試不會刪除 `ll_test_*` 資料庫；E2E 每次建立 `LanguageLearningE2E_*` 資料庫。兩者都在本機 LocalDB 執行個體 `LanguageLearningTest`，可用 `sqllocaldb` 整個刪除重建。
 
+### F2-02 已完成
+
+1. **Domain**（[02-database-design.md](phase2/02-database-design.md)）：
+   - `QuestionBank`：題型、能力、主題（參考資料）；`QuestionGroup` 與 `QuestionGroupVersion`（草稿 → 已發布 → 停用）、文章、題目、選項、主題關聯、媒體關聯、`MediaAsset`。發布時依題型檢查題數、選項數、恰好一個正確答案、題幹、解析、必要媒體與替代文字，並計算內容雜湊。
+   - `Exams`：`ScoringRule`、`ExamPaper`（完整模擬考 200 題、閱讀測驗 100 題）與 `ExamPaperItem`；發布時依 `ToeicBlueprint` 檢查各題型題數（已查證）。
+   - `Attempts`：`ExamAttempt`（練習、模擬考、閱讀測驗共用，ADR 0007）、`AttemptQuestionSnapshot`、`AttemptAnswer`。伺服器計時、截止後 5 秒寬限、聽力時間到自動進入閱讀、提早進入閱讀則鎖定聽力答案、較舊的序號忽略、交卷冪等、完成時計分且不重算。
+2. **Infrastructure**：EF Core 設定、參考資料 `HasData`（8 種題型、12 種能力、15 個主題、1 條計分規則）、Migration `20261115192602_AddQuestionBank`、`ImmutableContentInterceptor`（儲存前拒絕修改已發布內容、已上傳媒體、已發布試卷與完成的作答）。
+3. **實作時對設計的調整**：「每個題組最多一個已發布版本」「每題最多一個正確答案」「每個版本最多一個音檔」不使用篩選唯一索引（同一次儲存內多筆 UPDATE 的執行順序不固定），改由 Domain 規則保證；已發布版本另以題組的 `rowversion` 讓並行發布只有一個成功。題組捨棄草稿採 `ClientCascade`，資料庫端不串聯刪除版本。
+4. **測試**：單元測試新增 41 個（題型驗證、版本發布與複製、試卷題數、作答計時與寬限、序號、計分）；整合測試新增 `QuestionBankPersistenceTests` 7 個（參考資料、草稿修改與改版、不可變防護、媒體不可修改與雜湊唯一、資料庫唯一索引、作答計分後不可變、並行衝突）。
+
 ### F2-01 待完成
 
 1. 開發者建立 tag `v1.0.0`（`93f2f05`）。
@@ -71,6 +81,11 @@
 | 無障礙測試 `--repeat-each=10` | 11-16 | **通過**：60 通過、0 失敗 |
 | `npm run lint`（第一次） | 11-16 | **失敗**：`lazy-page.tsx` 同檔匯出函式又定義元件（react-refresh 規則），已將元件移至 `PageLoadError.tsx` |
 | `npm run lint`（修正後） | 11-16 | **通過**；同時重跑型別檢查、`npm test`（51 通過）、`npm run build`（主程式 397.41 KB）皆通過 |
+| F2-02 `dotnet build -c Release` | 11-16 | **通過**：警告 0、錯誤 0（第一次建置即通過） |
+| F2-02 `dotnet ef migrations add AddQuestionBank` / `has-pending-model-changes` | 11-16 | **已產生** / **通過** |
+| F2-02 單元測試 | 11-16 | **通過**：116 通過、0 失敗（含 Phase 1 與 F2-01 的 75 個） |
+| F2-02 整合測試（第一次） | 11-16 | 46 通過、**1 失敗**：建立新版本後在同一次儲存內發布，被不可變防護誤擋（只允許新增草稿）；已改為新增時可為草稿或已發布 |
+| F2-02 整合測試（修正後） | — | **本機未執行**：開發者選擇改由 PR 的 GitHub Actions CI 驗證 |
 
 ## Phase 1 — 基礎建設（v1.0.0）
 

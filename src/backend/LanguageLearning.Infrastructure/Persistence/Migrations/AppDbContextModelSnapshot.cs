@@ -22,6 +22,194 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.AttemptAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("ClientSequence")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("ElapsedMs")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("MarkedForReview")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("SelectedOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SnapshotId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId");
+
+                    b.HasIndex("SelectedOptionId");
+
+                    b.HasIndex("SnapshotId")
+                        .IsUnique();
+
+                    b.ToTable("AttemptAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.AttemptQuestionSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CorrectOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GroupVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Part")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("QuestionGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrectOptionId");
+
+                    b.HasIndex("GroupVersionId");
+
+                    b.HasIndex("QuestionGroupId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("AttemptId", "QuestionId")
+                        .IsUnique();
+
+                    b.HasIndex("AttemptId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("AttemptQuestionSnapshots", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.ExamAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CompletionReason")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("CorrectCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CurrentSection")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("ExamPaperId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastActivityAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ListeningCorrect")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ListeningDeadlineUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ListeningTotal")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PracticeCriteria")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ReadingCorrect")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadingDeadlineUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReadingStartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReadingTimeLimitSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReadingTotal")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("ScoringRuleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamPaperId");
+
+                    b.HasIndex("ScoringRuleId");
+
+                    b.HasIndex("UserId", "StartedAtUtc");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.HasIndex("Status", "ListeningDeadlineUtc", "ReadingDeadlineUtc")
+                        .HasFilter("[Status] = 'InProgress'");
+
+                    b.ToTable("ExamAttempts", (string)null);
+                });
+
             modelBuilder.Entity("LanguageLearning.Domain.Auditing.AuditLog", b =>
                 {
                     b.Property<long>("Id")
@@ -69,6 +257,133 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                     b.HasIndex("Action", "OccurredAtUtc");
 
                     b.ToTable("AuditLogs", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamPaper", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DefaultScoringRuleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ExamVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("ListeningDurationMs")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ReadingTimeLimitSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RetiredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RetiredByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("DefaultScoringRuleId");
+
+                    b.HasIndex("ExamVersionId");
+
+                    b.HasIndex("PublishedByUserId");
+
+                    b.HasIndex("RetiredByUserId");
+
+                    b.HasIndex("Kind", "Status");
+
+                    b.ToTable("ExamPapers", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamPaperItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ExamPaperId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GroupVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Part")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("QuestionGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupVersionId");
+
+                    b.HasIndex("QuestionGroupId");
+
+                    b.HasIndex("QuestionTypeId");
+
+                    b.HasIndex("ExamPaperId", "GroupVersionId")
+                        .IsUnique();
+
+                    b.HasIndex("ExamPaperId", "QuestionGroupId")
+                        .IsUnique();
+
+                    b.HasIndex("ExamPaperId", "SortOrder")
+                        .IsUnique();
+
+                    b.ToTable("ExamPaperItems", (string)null);
                 });
 
             modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamType", b =>
@@ -205,6 +520,60 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ScoringRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ExamVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ParametersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamVersionId");
+
+                    b.HasIndex("Code", "Version")
+                        .IsUnique();
+
+                    b.ToTable("ScoringRules", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1f7e5d4-8f6a-4c4b-9d5e-6f7a8b9c0401"),
+                            Code = "TOEIC-LR-RAW",
+                            Description = "答對題數與答對率（總分、聽力、閱讀、各 Part）。不換算官方分數。",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            IsDefault = true,
+                            Kind = "RawCount",
+                            Version = 1
+                        });
+                });
+
             modelBuilder.Entity("LanguageLearning.Domain.Goals.UserExamGoal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -246,6 +615,842 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("UserExamGoals", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.MediaAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("License")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SourceDescription")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<DateTime>("UploadedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.HasIndex("Kind", "Sha256")
+                        .IsUnique();
+
+                    b.ToTable("MediaAssets", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.Question", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Explanation")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GroupVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IntendedDifficulty")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Stem")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SkillId");
+
+                    b.HasIndex("GroupVersionId", "Number")
+                        .IsUnique();
+
+                    b.ToTable("Questions", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("PublishedVersionNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("QuestionTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("QuestionTypeId");
+
+                    b.ToTable("QuestionGroups", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("GroupVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MediaAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaAssetId");
+
+                    b.HasIndex("GroupVersionId", "MediaAssetId")
+                        .IsUnique();
+
+                    b.ToTable("QuestionGroupMedia", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupPassage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GroupVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupVersionId", "SortOrder")
+                        .IsUnique();
+
+                    b.ToTable("QuestionGroupPassages", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthorNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ContentHash")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RetiredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RetiredByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Transcript")
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("PublishedByUserId");
+
+                    b.HasIndex("RetiredByUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("QuestionGroupId", "Status");
+
+                    b.HasIndex("QuestionGroupId", "VersionNumber")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "QuestionGroupId" }, "IX_QuestionGroupVersions_QuestionGroupId_Draft")
+                        .IsUnique()
+                        .HasFilter("[Status] = 'Draft'");
+
+                    b.ToTable("QuestionGroupVersions", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .IsUnicode(false)
+                        .HasColumnType("char(1)")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId", "Label")
+                        .IsUnique();
+
+                    b.ToTable("QuestionOptions", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionTopic", b =>
+                {
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("QuestionId", "TopicId");
+
+                    b.HasIndex("TopicId");
+
+                    b.ToTable("QuestionTopics", (string)null);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AllowsGraphic")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid>("ExamVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MaxPassages")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxQuestions")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinPassages")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinQuestions")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("OptionCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Part")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RequiresAudio")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresPhoto")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresStem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("ShowsOptionText")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("ExamVersionId");
+
+                    b.ToTable("QuestionTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0101"),
+                            AllowsGraphic = false,
+                            Code = "TOEIC_P1_PHOTOGRAPHS",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 0,
+                            MaxQuestions = 1,
+                            MinPassages = 0,
+                            MinQuestions = 1,
+                            Name = "Part 1 照片描述",
+                            OptionCount = 4,
+                            Part = 1,
+                            RequiresAudio = true,
+                            RequiresPhoto = true,
+                            RequiresStem = false,
+                            Section = "Listening",
+                            ShowsOptionText = false,
+                            SortOrder = 10
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0102"),
+                            AllowsGraphic = false,
+                            Code = "TOEIC_P2_QUESTION_RESPONSE",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 0,
+                            MaxQuestions = 1,
+                            MinPassages = 0,
+                            MinQuestions = 1,
+                            Name = "Part 2 應答問題",
+                            OptionCount = 3,
+                            Part = 2,
+                            RequiresAudio = true,
+                            RequiresPhoto = false,
+                            RequiresStem = false,
+                            Section = "Listening",
+                            ShowsOptionText = false,
+                            SortOrder = 20
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0103"),
+                            AllowsGraphic = true,
+                            Code = "TOEIC_P3_CONVERSATIONS",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 0,
+                            MaxQuestions = 3,
+                            MinPassages = 0,
+                            MinQuestions = 3,
+                            Name = "Part 3 簡短對話",
+                            OptionCount = 4,
+                            Part = 3,
+                            RequiresAudio = true,
+                            RequiresPhoto = false,
+                            RequiresStem = true,
+                            Section = "Listening",
+                            ShowsOptionText = true,
+                            SortOrder = 30
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0104"),
+                            AllowsGraphic = true,
+                            Code = "TOEIC_P4_TALKS",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 0,
+                            MaxQuestions = 3,
+                            MinPassages = 0,
+                            MinQuestions = 3,
+                            Name = "Part 4 簡短獨白",
+                            OptionCount = 4,
+                            Part = 4,
+                            RequiresAudio = true,
+                            RequiresPhoto = false,
+                            RequiresStem = true,
+                            Section = "Listening",
+                            ShowsOptionText = true,
+                            SortOrder = 40
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0105"),
+                            AllowsGraphic = false,
+                            Code = "TOEIC_P5_INCOMPLETE_SENTENCES",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 0,
+                            MaxQuestions = 1,
+                            MinPassages = 0,
+                            MinQuestions = 1,
+                            Name = "Part 5 句子填空",
+                            OptionCount = 4,
+                            Part = 5,
+                            RequiresAudio = false,
+                            RequiresPhoto = false,
+                            RequiresStem = true,
+                            Section = "Reading",
+                            ShowsOptionText = true,
+                            SortOrder = 50
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0106"),
+                            AllowsGraphic = false,
+                            Code = "TOEIC_P6_TEXT_COMPLETION",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 1,
+                            MaxQuestions = 4,
+                            MinPassages = 1,
+                            MinQuestions = 4,
+                            Name = "Part 6 段落填空",
+                            OptionCount = 4,
+                            Part = 6,
+                            RequiresAudio = false,
+                            RequiresPhoto = false,
+                            RequiresStem = false,
+                            Section = "Reading",
+                            ShowsOptionText = true,
+                            SortOrder = 60
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0107"),
+                            AllowsGraphic = true,
+                            Code = "TOEIC_P7_SINGLE_PASSAGE",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 1,
+                            MaxQuestions = 4,
+                            MinPassages = 1,
+                            MinQuestions = 2,
+                            Name = "Part 7 單篇閱讀",
+                            OptionCount = 4,
+                            Part = 7,
+                            RequiresAudio = false,
+                            RequiresPhoto = false,
+                            RequiresStem = true,
+                            Section = "Reading",
+                            ShowsOptionText = true,
+                            SortOrder = 70
+                        },
+                        new
+                        {
+                            Id = new Guid("7e4b2a10-5c3d-4f1e-9a2b-3c4d5e6f0108"),
+                            AllowsGraphic = true,
+                            Code = "TOEIC_P7_MULTIPLE_PASSAGES",
+                            ExamVersionId = new Guid("9c2d4f6a-1e3b-4c5d-8e7f-0a1b2c3d0001"),
+                            MaxPassages = 3,
+                            MaxQuestions = 5,
+                            MinPassages = 2,
+                            MinQuestions = 5,
+                            Name = "Part 7 多篇閱讀",
+                            OptionCount = 4,
+                            Part = 7,
+                            RequiresAudio = false,
+                            RequiresPhoto = false,
+                            RequiresStem = true,
+                            Section = "Reading",
+                            ShowsOptionText = true,
+                            SortOrder = 71
+                        });
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.Skill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Section")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Skills", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0001"),
+                            Code = "PHOTO_DESCRIPTION",
+                            Name = "照片描述",
+                            Section = "Listening",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0002"),
+                            Code = "RESPONSE",
+                            Name = "應答判斷",
+                            Section = "Listening",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0003"),
+                            Code = "SPEAKER_INTENT",
+                            Name = "說話者意圖",
+                            Section = "Listening",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0004"),
+                            Code = "MAIN_IDEA",
+                            Name = "主旨與目的",
+                            SortOrder = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0005"),
+                            Code = "DETAIL",
+                            Name = "細節理解",
+                            SortOrder = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0006"),
+                            Code = "INFERENCE",
+                            Name = "推論",
+                            SortOrder = 6
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0007"),
+                            Code = "GRAPHIC",
+                            Name = "圖表整合",
+                            SortOrder = 7
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0008"),
+                            Code = "PARAPHRASE",
+                            Name = "同義改寫",
+                            SortOrder = 8
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0009"),
+                            Code = "VOCABULARY",
+                            Name = "字彙",
+                            SortOrder = 9
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0010"),
+                            Code = "GRAMMAR",
+                            Name = "文法",
+                            Section = "Reading",
+                            SortOrder = 10
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0011"),
+                            Code = "SENTENCE_INSERTION",
+                            Name = "句子插入",
+                            Section = "Reading",
+                            SortOrder = 11
+                        },
+                        new
+                        {
+                            Id = new Guid("8d5c3b21-6d4e-4a2f-8b3c-4d5e6f7a0012"),
+                            Code = "MULTI_PASSAGE",
+                            Name = "多篇整合",
+                            Section = "Reading",
+                            SortOrder = 12
+                        });
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.Topic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Topics", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0001"),
+                            Code = "OFFICE",
+                            Name = "辦公室",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0002"),
+                            Code = "PERSONNEL",
+                            Name = "人事與招募",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0003"),
+                            Code = "MARKETING",
+                            Name = "行銷與銷售",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0004"),
+                            Code = "FINANCE",
+                            Name = "財務與會計",
+                            SortOrder = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0005"),
+                            Code = "PURCHASING",
+                            Name = "採購與訂單",
+                            SortOrder = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0006"),
+                            Code = "MANUFACTURING",
+                            Name = "製造與品管",
+                            SortOrder = 6
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0007"),
+                            Code = "CUSTOMER_SERVICE",
+                            Name = "客戶服務",
+                            SortOrder = 7
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0008"),
+                            Code = "TECHNOLOGY",
+                            Name = "科技與設備",
+                            SortOrder = 8
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0009"),
+                            Code = "TRAVEL",
+                            Name = "旅遊與出差",
+                            SortOrder = 9
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0010"),
+                            Code = "TRANSPORTATION",
+                            Name = "交通",
+                            SortOrder = 10
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0011"),
+                            Code = "DINING",
+                            Name = "餐飲",
+                            SortOrder = 11
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0012"),
+                            Code = "LODGING",
+                            Name = "住宿與房地產",
+                            SortOrder = 12
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0013"),
+                            Code = "EVENTS",
+                            Name = "會議與活動",
+                            SortOrder = 13
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0014"),
+                            Code = "HEALTH",
+                            Name = "健康與醫療",
+                            SortOrder = 14
+                        },
+                        new
+                        {
+                            Id = new Guid("9e6d4c32-7e5f-4b3a-9c4d-5e6f7a8b0015"),
+                            Code = "ENTERTAINMENT",
+                            Name = "娛樂與文化",
+                            SortOrder = 15
+                        });
                 });
 
             modelBuilder.Entity("LanguageLearning.Infrastructure.Email.EmailOutboxMessage", b =>
@@ -539,6 +1744,137 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.AttemptAnswer", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.Attempts.ExamAttempt", null)
+                        .WithMany("Answers")
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionOption", null)
+                        .WithMany()
+                        .HasForeignKey("SelectedOptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LanguageLearning.Domain.Attempts.AttemptQuestionSnapshot", null)
+                        .WithMany()
+                        .HasForeignKey("SnapshotId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.AttemptQuestionSnapshot", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.Attempts.ExamAttempt", null)
+                        .WithMany("Questions")
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionOption", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectOptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", null)
+                        .WithMany()
+                        .HasForeignKey("GroupVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroup", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.Question", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.ExamAttempt", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.Exams.ExamPaper", null)
+                        .WithMany()
+                        .HasForeignKey("ExamPaperId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LanguageLearning.Domain.Exams.ScoringRule", null)
+                        .WithMany()
+                        .HasForeignKey("ScoringRuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamPaper", b =>
+                {
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.Exams.ScoringRule", null)
+                        .WithMany()
+                        .HasForeignKey("DefaultScoringRuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.Exams.ExamVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ExamVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RetiredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamPaperItem", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.Exams.ExamPaper", null)
+                        .WithMany("Items")
+                        .HasForeignKey("ExamPaperId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", null)
+                        .WithMany()
+                        .HasForeignKey("GroupVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroup", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionType", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamVersion", b =>
                 {
                     b.HasOne("LanguageLearning.Domain.Exams.ExamType", "ExamType")
@@ -548,6 +1884,15 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ExamType");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ScoringRule", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.Exams.ExamVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ExamVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LanguageLearning.Domain.Goals.UserExamGoal", b =>
@@ -565,6 +1910,131 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ExamType");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.MediaAsset", b =>
+                {
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.Question", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", null)
+                        .WithMany("Questions")
+                        .HasForeignKey("GroupVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.Skill", null)
+                        .WithMany()
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroup", b =>
+                {
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionType", "QuestionType")
+                        .WithMany()
+                        .HasForeignKey("QuestionTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("QuestionType");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupMedia", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", null)
+                        .WithMany("Media")
+                        .HasForeignKey("GroupVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.MediaAsset", "MediaAsset")
+                        .WithMany()
+                        .HasForeignKey("MediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MediaAsset");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupPassage", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", null)
+                        .WithMany("Passages")
+                        .HasForeignKey("GroupVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", b =>
+                {
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.QuestionGroup", null)
+                        .WithMany("Versions")
+                        .HasForeignKey("QuestionGroupId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RetiredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionOption", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.Question", null)
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionTopic", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.Question", null)
+                        .WithMany("Topics")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LanguageLearning.Domain.QuestionBank.Topic", null)
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionType", b =>
+                {
+                    b.HasOne("LanguageLearning.Domain.Exams.ExamVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ExamVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LanguageLearning.Infrastructure.Email.EmailOutboxMessage", b =>
@@ -627,9 +2097,42 @@ namespace LanguageLearning.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("LanguageLearning.Domain.Attempts.ExamAttempt", b =>
+                {
+                    b.Navigation("Answers");
+
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamPaper", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("LanguageLearning.Domain.Exams.ExamType", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.Question", b =>
+                {
+                    b.Navigation("Options");
+
+                    b.Navigation("Topics");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroup", b =>
+                {
+                    b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("LanguageLearning.Domain.QuestionBank.QuestionGroupVersion", b =>
+                {
+                    b.Navigation("Media");
+
+                    b.Navigation("Passages");
+
+                    b.Navigation("Questions");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,7 +1,9 @@
 using LanguageLearning.Application.Abstractions;
+using LanguageLearning.Domain.Attempts;
 using LanguageLearning.Domain.Auditing;
 using LanguageLearning.Domain.Exams;
 using LanguageLearning.Domain.Goals;
+using LanguageLearning.Domain.QuestionBank;
 using LanguageLearning.Infrastructure.Email;
 using LanguageLearning.Infrastructure.Identity;
 using LanguageLearning.Infrastructure.Persistence.Converters;
@@ -22,6 +24,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     public DbSet<EmailOutboxMessage> EmailOutbox => Set<EmailOutboxMessage>();
+
+    public DbSet<QuestionType> QuestionTypes => Set<QuestionType>();
+
+    public DbSet<Skill> Skills => Set<Skill>();
+
+    public DbSet<Topic> Topics => Set<Topic>();
+
+    public DbSet<QuestionGroup> QuestionGroups => Set<QuestionGroup>();
+
+    public DbSet<QuestionGroupVersion> QuestionGroupVersions => Set<QuestionGroupVersion>();
+
+    public DbSet<Question> Questions => Set<Question>();
+
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+
+    public DbSet<ScoringRule> ScoringRules => Set<ScoringRule>();
+
+    public DbSet<ExamPaper> ExamPapers => Set<ExamPaper>();
+
+    public DbSet<ExamAttempt> ExamAttempts => Set<ExamAttempt>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

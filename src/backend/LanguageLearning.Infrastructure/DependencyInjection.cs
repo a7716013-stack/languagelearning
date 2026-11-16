@@ -44,7 +44,8 @@ public static class DependencyInjection
         services.AddOptions<DatabaseOptions>().Bind(configuration.GetSection(DatabaseOptions.SectionName));
 
         var connectionString = configuration.GetConnectionString("Default");
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddSingleton<ImmutableContentInterceptor>();
+        services.AddDbContext<AppDbContext>((serviceProvider, options) =>
         {
             if (string.IsNullOrWhiteSpace(connectionString))
             {
@@ -58,6 +59,9 @@ public static class DependencyInjection
                 sql.UseCompatibilityLevel(160);
                 sql.EnableRetryOnFailure(maxRetryCount: 3);
             });
+
+            // 已發布內容與完成的作答不可變（ADR 0008）。
+            options.AddInterceptors(serviceProvider.GetRequiredService<ImmutableContentInterceptor>());
         });
 
         var auth = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
