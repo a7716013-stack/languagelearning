@@ -1,15 +1,29 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
+import { NetworkStatusBanner } from '@/components/layout/NetworkStatusBanner'
 import { ErrorState, FullPageLoading } from '@/components/layout/states'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { homePathFor } from '@/lib/home-path'
 import { ForbiddenPage } from './ErrorPages'
+
+/**
+ * 確認登入狀態期間的畫面。離線時查詢會暫停直到恢復連線，
+ * 因此這裡也要顯示網路狀態提示，否則使用者只會看到轉圈而不知道原因。
+ */
+function SessionLoading() {
+  return (
+    <>
+      <NetworkStatusBanner />
+      <FullPageLoading />
+    </>
+  )
+}
 
 /** 需要登入；未登入時導向登入頁並保留原本要前往的路徑。 */
 export function RequireAuth() {
   const { data: user, isPending, isError, refetch } = useCurrentUser()
   const location = useLocation()
 
-  if (isPending) return <FullPageLoading />
+  if (isPending) return <SessionLoading />
   if (isError) {
     return (
       <div className="mx-auto max-w-md p-6">
@@ -27,7 +41,7 @@ export function RequireAuth() {
 /** 已登入使用者不需要看到登入 / 註冊頁。 */
 export function GuestOnly() {
   const { data: user, isPending } = useCurrentUser()
-  if (isPending) return <FullPageLoading />
+  if (isPending) return <SessionLoading />
   if (user) return <Navigate to={homePathFor(user)} replace />
   return <Outlet />
 }
