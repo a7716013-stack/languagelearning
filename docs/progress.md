@@ -94,6 +94,10 @@ GitHub Actions CI（PR #2，`ubuntu-24.04`，commit `6384dcf`，2026-11-17，[ru
 | Frontend | **通過**：lint、型別檢查、測試 51 通過（8 個檔案）、建置（主程式 397.41 KB，PWA 預先快取 41 個檔案）；`npm audit` 4 個低風險（已知限制 1） |
 | E2E（Playwright + axe，Mailpit） | **通過**：18 通過；`tests/e2e` 的 `npm audit` 0 個 |
 
+合併後 `main` 的 CI（commit `bd6a22e`，[run 43925456994](https://github.com/a7716013-stack/languagelearning/actions/runs/43925456994)）：Backend、Frontend 通過；**E2E 1 失敗**（「離線時顯示網路狀態提示」，重試後仍失敗；PR 上兩次都通過，屬時序問題）。
+原因：確認登入狀態期間（`GuestOnly` / `RequireAuth` 顯示載入畫面）若剛好離線，TanStack Query 會暫停查詢直到恢復連線，畫面只有轉圈、沒有網路狀態提示。這也是實際的使用者問題。
+修正：載入畫面同時顯示網路狀態提示，並新增單元測試（分支 `fix/offline-session-banner`）。
+
 ## Phase 1 — 基礎建設（v1.0.0）
 
 狀態：**驗收完成**。本機建置與測試通過；GitHub Actions CI（後端、前端、E2E）於 2026-11-13 全部通過（見下方「Build 與測試結果」）。

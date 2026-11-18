@@ -1,5 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { json, mockFetch } from '@/test/fetch-mock'
 import { renderRoutes } from '@/test/render'
 import type { CurrentUser } from '@/types/api'
@@ -75,6 +75,19 @@ describe('route guards', () => {
     renderRoutes(routes, '/admin')
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '管理後台' })).toBeInTheDocument())
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('離線時確認登入狀態期間仍顯示網路狀態提示', async () => {
+    vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)
+    mockFetch({ 'GET /api/users/me': () => new Promise<Response>(() => {}) })
+    renderRoutes(routes, '/dashboard')
+
+    expect(await screen.findByText(/目前處於離線狀態/)).toBeInTheDocument()
+    expect(screen.getByText('載入中…')).toBeInTheDocument()
   })
 
   it('伺服器錯誤時顯示可重試的錯誤狀態', async () => {
